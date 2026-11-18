@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K-타이쿤</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0f1218;--panel:#171c25;--panel2:#1e2430;--line:#2a3242;
+  --text:#e6e9ef;--muted:#8b94a7;--gold:#e0b04f;--gold2:#f3d27d;
+  --green:#3fbf7f;--red:#ef5b5b;--blue:#4c8dff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+button,input,select{font-family:inherit;font-size:13px}
+.top{position:sticky;top:0;z-index:50;background:#0b0e13;border-bottom:2px solid var(--gold);display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:10px 16px}
+.logo{font-weight:700;color:var(--gold2);font-size:16px;white-space:nowrap}
+.logo small{color:var(--muted);font-weight:400;margin-left:6px;font-size:12px}
+.hstats{display:flex;flex-wrap:wrap;gap:6px 14px;flex:1;font-size:12px;color:var(--muted)}
+.hstats b{color:var(--text);font-weight:500;margin-left:4px}
+.ctrl{display:flex;gap:6px}
+.btn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--gold)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.gold{background:var(--gold);color:#1a1408;border-color:var(--gold);font-weight:700}
+.btn.gold:hover{background:var(--gold2)}
+.btn.sm{padding:4px 8px;font-size:12px}
+.btn.red{color:var(--red)}
+.btn.green{color:var(--green)}
+.tabs{display:flex;overflow-x:auto;background:var(--panel);border-bottom:1px solid var(--line);padding:0 8px;scrollbar-width:none}
+.tab{padding:11px 14px;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;user-select:none}
+.tab.on{color:var(--gold2);border-bottom-color:var(--gold)}
+main{padding:16px;max-width:1280px;margin:0 auto}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
+.g3{grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr))}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.kpi .l{font-size:11px;color:var(--muted)}
+.kpi .v{font-size:19px;font-weight:700;margin-top:4px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.card h3{font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.muted{color:var(--muted)}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{color:var(--muted);font-weight:500;text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid #20283a;white-space:nowrap}
+tr.me td{background:rgba(224,176,79,.08)}
+td.r,th.r{text-align:right}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:#232a38;min-width:90px}
+.bar>div{height:100%}
+.meter{height:6px;background:#232a38;border-radius:3px;overflow:hidden;margin-top:3px}
+.meter>div{height:100%;background:var(--gold)}
+.row{display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:12.5px}
+.row span:first-child{color:var(--muted)}
+.ctrls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.ctrls label{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+select,input[type=number],input[type=text]{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%}
+.pricebox{display:flex;gap:4px}
+.pricebox input{flex:1;min-width:0}
+.mapwrap{display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:12px}
+@media(max-width:760px){.mapwrap{grid-template-columns:1fr}}
+svg.map{width:100%;height:auto;display:block}
+.city{cursor:pointer}
+.city:hover circle.c{stroke:#fff}
+.news{list-style:none}
+.news li{padding:7px 0;border-bottom:1px solid #20283a;font-size:12.5px;display:flex;gap:10px}
+.news .d{color:var(--muted);white-space:nowrap;min-width:78px}
+.n-good{color:var(--green)}.n-bad{color:var(--red)}.n-me{color:var(--gold2)}
+.tip{background:rgba(224,176,79,.08);border:1px dashed var(--gold);border-radius:10px;padding:12px 14px;margin-bottom:12px;line-height:1.7;font-size:13px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal.hidden{display:none}
+.mbox{background:var(--panel);border:1px solid var(--gold);border-radius:12px;padding:20px;max-width:520px;width:100%;max-height:90vh;overflow:auto}
+.mbox h2{color:var(--gold2);font-size:18px;margin-bottom:12px}
+.mbox p,.mbox li{line-height:1.7;font-size:13px}
+.mbox ul{padding-left:18px;margin:6px 0}
+.mbox .fld{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;font-size:12px;color:var(--muted)}
+.mbox .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#000c;border:1px solid var(--gold);color:var(--text);padding:9px 16px;border-radius:8px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;font-size:13px}
+#toast.on{opacity:1}
+.chartbox{position:relative;height:240px}
+.tag{font-size:11px;padding:2px 6px;border-radius:4px;background:#232a38;color:var(--muted)}
+.small{font-size:11.5px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo">K-타이쿤<small id="coName"></small></div>
+  <div class="hstats" id="hstats"></div>
+  <div class="ctrl">
+    <button class="btn gold" id="btnNext" onclick="nextMonth()">다음 달 ▶</button>
+    <button class="btn" id="btnAuto" onclick="toggleAuto()">자동 ⏵</button>
+    <button class="btn" onclick="openMenu()">☰</button>
+  </div>
+</header>
+<nav class="tabs" id="tabs"></nav>
+<main id="main"></main>
+<div id="modal" class="modal hidden"><div class="mbox" id="mbox"></div></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+// ════════════════════ 데이터 ════════════════════
+const SAVE_KEY='ktycoon_save_v1';
+const START_YEAR=2027, END_MONTH=120, SHARES=1e6;
+const FACTORY_COST=25e8, FACTORY_OVH=0.8e8, STORE_BASE=3e8, STORE_RENT=0.1e8;
+
+const CITIES=[
+  {id:'seoul',name:'서울',pop:940,income:1.35,land:2.6,wage:1.40,x:98,y:88},
+  {id:'incheon',name:'인천',pop:300,income:1.05,land:1.4,wage:1.10,x:66,y:98},
+  {id:'suwon',name:'수원',pop:120,income:1.15,land:1.5,wage:1.15,x:104,y:122},
+  {id:'daejeon',name:'대전',pop:145,income:1.00,land:1.0,wage:1.00,x:122,y:188},
+  {id:'daegu',name:'대구',pop:237,income:0.95,land:1.1,wage:0.95,x:196,y:224},
+  {id:'gwangju',name:'광주',pop:142,income:0.92,land:0.9,wage:0.90,x:90,y:280},
+  {id:'ulsan',name:'울산',pop:110,income:1.25,land:1.1,wage:1.20,x:246,y:250},
+  {id:'busan',name:'부산',pop:330,income:1.00,land:1.5,wage:1.00,x:228,y:288},
+  {id:'changwon',name:'창원',pop:100,income:1.00,land:0.9,wage:0.95,x:194,y:284},
+  {id:'jeju',name:'제주',pop:67,income:0.95,land:1.2,wage:0.90,x:82,y:370},
+];
+// mat:재료비 labor:인건비(도시 임금 배수 적용) ref:기준가 dem:인구 1만명당 월 수요 sens:소득 민감도 el:가격탄력성
+// cap:공장 월 생산능력 scap:매장 월 판매한도 rd:R&D 효율 기준액
+const PRODUCTS=[
+  {id:'food',name:'식품',icon:'🍞',mat:2300,labor:500,ref:5000,dem:400,sens:0.3,el:0.6,cap:250000,scap:80000,rd:0.5e8},
+  {id:'apparel',name:'의류',icon:'👕',mat:16000,labor:6000,ref:39000,dem:40,sens:0.9,el:1.0,cap:30000,scap:9000,rd:0.6e8},
+  {id:'cosme',name:'화장품',icon:'💄',mat:10500,labor:4000,ref:28000,dem:50,sens:1.0,el:1.1,cap:40000,scap:12000,rd:0.7e8},
+  {id:'phone',name:'스마트폰',icon:'📱',mat:470000,labor:60000,ref:950000,dem:2.2,sens:1.2,el:1.3,cap:1500,scap:450,rd:1.5e8},
+  {id:'appl',name:'가전',icon:'📺',mat:610000,labor:80000,ref:1200000,dem:1.5,sens:1.3,el:1.2,cap:1000,scap:300,rd:1.2e8},
+  {id:'car',name:'자동차',icon:'🚗',mat:16500000,labor:1500000,ref:32000000,dem:0.05,sens:1.4,el:1.4,cap:40,scap:12,rd:2.0e8},
+];
+const STRATS={
+  price:{label:'저가 공세',markup:0.9,rd:0.02,ad:0.03,aggr:0.35},
+  quality:{label:'품질 우선',markup:1.12,rd:0.08,ad:0.035,aggr:0.25},
+  brand:{label:'브랜드',markup:1.08,rd:0.03,ad:0.09,aggr:0.3},
+  balanced:{label:'균형',markup:1.0,rd:0.05,ad:0.05,aggr:0.3},
+  expand:{label:'확장',markup:0.96,rd:0.03,ad:0.04,aggr:0.5},
+};
+const AI_DEFS=[
+  ['한빛산업','#e4572e','price'],['대명그룹','#4c8dff','balanced'],['세운전자','#2ec4b6','quality'],
+  ['청룡물산','#9b5de5','expand'],['미래유통','#f15bb5','brand'],['동방상사','#00bbf9','balanced'],
+  ['누리코퍼레이션','#7bdff2','expand'],['은하테크','#8ac926','quality'],['백두상사','#ff924c','price'],
+];
+const BUDGETS=[0,0.1e8,0.2e8,0.5e8,1e8,2e8,3e8,5e8];
+
+let G=null;
+const UI={tab:'overview',city:'seoul',speed:0,timer:null,charts:{}};
+
+// ════════════════════ 유틸 ════════════════════
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const gauss=()=>(Math.random()+Math.random()+Math.random()-1.5)*1.15;
+const P=id=>PRODUCTS.find(p=>p.id===id);
+const C=id=>CITIES.find(c=>c.id===id);
+const player=()=>G.companies[0];
+const alive=()=>G.companies.filter(c=>c.alive);
+const sum=(a,f)=>a.reduce((t,x)=>t+f(x),0);
+function uid(){G.seq=(G.seq||0)+1;return G.seq;}
+function dateStr(m){return `${START_YEAR+Math.floor(m/12)}년 ${m%12+1}월`;}
+function shortDate(m){return `${String(START_YEAR+Math.floor(m/12)).slice(2)}.${m%12+1}`;}
+function fmtW(v){
+  const s=v<0?'-':'';v=Math.abs(v);
+  if(v>=1e12)return s+(v/1e12).toFixed(2)+'조';
+  if(v>=1e8)return s+(v/1e8).toFixed(v>=1e10?0:1)+'억';
+  if(v>=1e6)return s+Math.round(v/1e4).toLocaleString()+'만원';
+  return s+Math.round(v).toLocaleString()+'원';
+}
+function fmtN(n){n=Math.round(n);if(Math.abs(n)>=1e4)return (n/1e4).toFixed(1)+'만';return n.toLocaleString();}
+function pct(v,d=0){return (v*100).toFixed(d)+'%';}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function cls(v){return v>0?'pos':v<0?'neg':'';}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),1900);}
+function addNews(text,type=''){G.news.unshift({m:G.month,text,type});if(G.news.length>250)G.news.length=250;}
+
+// ════════════════════ 기업/시설 ════════════════════
+function emptyRep(){return {rev:0,cogs:0,prod:0,fovh:0,rent:0,hq:0,int:0,hold:0,rd:0,ad:0,tax:0,div:0,profit:0,cash:0};}
+function mkCompany(id,name,color,isPlayer,strat){
+  return {id,name,color,isPlayer,strat,cash:0,loan:0,alive:true,status:'',products:{},factories:[],stores:[],
+    hist:{value:[],rev:[],profit:[],cash:[]},value:0,price:0,prevPrice:0,negMonths:0,rep:emptyRep(),profits:[]};
+}
+function matMult(){return G.mat;}
+function unitCostAt(pid,city){const p=P(pid);return p.mat*matMult()+p.labor*C(city).wage;}
+function getP(co,pid){
+  if(!co.products[pid]){
+    const p=P(pid);
+    co.products[pid]={price:p.ref,level:1,auto:true,rd:0,ad:0,quality:25,brand:5,stock:0,avgCost:unitCostAt(pid,'daejeon'),
+      sales:0,revenue:0,cogs:0,profit:0,produced:0,city:{},lostStock:0,lostStore:0,fovh:0,rent:0,hold:0};
+  }
+  return co.products[pid];
+}
+const capacity=(co,pid)=>co.factories.filter(f=>f.pid===pid).length*P(pid).cap;
+const nStores=(co,pid,city)=>co.stores.filter(s=>s.pid===pid&&(!city||s.city===city)).length;
+function prodUnitCost(co,pid){const fs=co.factories.filter(f=>f.pid===pid);return fs.length?sum(fs,f=>unitCostAt(pid,f.city))/fs.length:0;}
+function factoryCost(city){return FACTORY_COST*(0.7+0.3*C(city).land);}
+function storeCost(city){return STORE_BASE*C(city).land;}
+function buildFactory(co,pid,city,free){
+  const cost=factoryCost(city);
+  if(!free){if(co.cash<cost)return false;co.cash-=cost;}
+  co.factories.push({id:uid(),pid,city,cost,built:G.month});getP(co,pid);return true;
+}
+function openStore(co,pid,city,free){
+  const cost=storeCost(city);
+  if(!free){if(co.cash<cost)return false;co.cash-=cost;}
+  co.stores.push({id:uid(),pid,city,cost,built:G.month,low:0});getP(co,pid);return true;
+}
+function baseDemand(c,pid){
+  const p=P(pid);
+  return c.pop*(1+G.month*0.002)*p.dem*Math.pow(c.income,p.sens)*Math.pow(G.econ,p.sens+0.3)*G.prodMult[pid];
+}
+function allStores(city,pid){return sum(alive(),co=>nStores(co,pid,city));}
+function bestStoreCity(co,pid){
+  let best=null,bs=-1;
+  for(const c of CITIES){
+    const d=baseDemand(c,pid),tot=allStores(c.id,pid),own=nStores(co,pid,c.id);
+    if(own*P(pid).scap>d*0.7)continue;
+    const s=d/(P(pid).scap*(1+tot))*(own?0.7:1)*rnd(0.8,1.2);
+    if(s>bs){bs=s;best=c.id;}
+  }
+  return best;
+}
+function cheapCity(){
+  const s=CITIES.map(c=>({id:c.id,v:(c.wage*0.7+c.land*0.3)*rnd(0.9,1.1)})).sort((a,b)=>a.v-b.v);
+  return pick(s.slice(0,4)).id;
+}
+
+// ════════════════════ 새 게임 ════════════════════
+function newGame(name,diff,startPid){
+  G={v:1,month:0,econ:1,econTrend:0,mat:1,prodMult:{},seq:0,companies:[],holdings:{},news:[],market:{},mtotal:{},
+     over:false,endless:false,econHist:[],diff:diff,aiAggr:{easy:0.6,normal:0.85,hard:1.1}[diff]||0.85};
+  PRODUCTS.forEach(p=>G.prodMult[p.id]=1);
+  const pl=mkCompany(0,name||'내 회사','#e0b04f',true,null);
+  pl.cash={easy:150e8,normal:100e8,hard:60e8}[diff]||100e8;
+  G.companies.push(pl);
+  if(startPid){
+    buildFactory(pl,startPid,'daejeon',true);
+    ['seoul','seoul','busan','incheon'].forEach(c=>openStore(pl,startPid,c,true));
+    const e=getP(pl,startPid);e.quality=30;e.brand=10;e.stock=Math.round(P(startPid).cap*0.5);
+  }
+  AI_DEFS.forEach((d,i)=>{
+    const co=mkCompany(i+1,d[0],d[1],false,d[2]);
+    co.cash=rnd(60e8,130e8)*({easy:0.7,normal:0.9,hard:1.1}[diff]||0.9);G.companies.push(co);
+    const prods=[PRODUCTS[i%6].id];
+    if(i>=6||Math.random()<0.45){let q;do{q=pick(PRODUCTS).id;}while(prods.includes(q));prods.push(q);}
+    prods.forEach(pid=>aiSetupProduct(co,pid,true));
+  });
+  addNews(`${pl.name} 창업. 목표: 10년 뒤 기업가치 1위.`,'me');
+  computeValuations();recordHistory();
+}
+function aiSetupProduct(co,pid,free){
+  const city=cheapCity();const p=P(pid);const S=STRATS[co.strat];
+  if(!buildFactory(co,pid,city,free))return false;
+  const e=getP(co,pid);
+  e.quality=Math.round(rnd(20,40)+(co.strat==='quality'?12:0));
+  e.brand=Math.round(rnd(8,25)+(co.strat==='brand'?15:0));
+  e.price=Math.round(p.ref*S.markup);
+  e.stock=free?Math.round(p.cap*0.6):0;
+  e.avgCost=unitCostAt(pid,city);
+  for(let k=0;k<(free?3:2);k++){const c=bestStoreCity(co,pid);if(c)openStore(co,pid,c,free);}
+  return true;
+}
+
+// ════════════════════ 월 진행 ════════════════════
+function step(){
+  if(G.over&&!G.endless)return;
+  updateEconomy();
+  autoProduction(player());
+  for(const co of alive()){resetMonth(co);production(co);}
+  runMarket();
+  for(const co of alive())finance(co);
+  bankruptcyCheck();
+  computeValuations();
+  for(const co of alive())if(!co.isPlayer)aiTurn(co);
+  recordHistory();
+  G.month++;
+  if(!G.over&&G.month>=END_MONTH&&!G.endless)G.over='end';
+}
+function updateEconomy(){
+  G.econTrend=G.econTrend*0.9+gauss()*0.004+(1-G.econ)*0.01;
+  G.econ=clamp(G.econ+G.econTrend+gauss()*0.005,0.8,1.3);
+  G.mat=clamp(G.mat+gauss()*0.015+(1-G.mat)*0.03,0.75,1.45);
+  for(const p of PRODUCTS)G.prodMult[p.id]=1+(G.prodMult[p.id]-1)*0.88;
+  if(Math.random()<0.09){
+    const ev=pick([
+      ()=>{G.econTrend+=0.025;addNews('📈 경기 호황 진입. 소비 심리 개선.','good');},
+      ()=>{G.econTrend-=0.025;addNews('📉 경기 침체 우려. 소비 위축.','bad');},
+      ()=>{G.mat=clamp(G.mat+0.15,0.75,1.45);addNews('🛢️ 국제 원자재가 급등. 생산원가 상승.','bad');},
+      ()=>{G.mat=clamp(G.mat-0.12,0.75,1.45);addNews('⛴️ 원자재가 안정. 생산원가 하락.','good');},
+      ()=>{const p=pick(PRODUCTS);G.prodMult[p.id]=1.35;addNews(`🔥 ${p.icon} ${p.name} 열풍. 수요 급증.`,'good');},
+      ()=>{const p=pick(PRODUCTS);G.prodMult[p.id]=0.75;addNews(`❄️ ${p.icon} ${p.name} 수요 급감.`,'bad');},
+      ()=>{const p=pick(['phone','appl','car']);for(const co of alive())if(co.products[p])co.products[p].quality=Math.max(1,co.products[p].quality-6);addNews(`🔬 ${P(p).name} 신기술 등장. 기존 제품 품질 가치 하락.`,'bad');},
+    ]);
+    ev();
+  }
+  G.econHist.push(G.econ);
+}
+function autoProduction(co){
+  if(!co.alive)return;
+  for(const pid in co.products){
+    const e=co.products[pid],cap=capacity(co,pid);
+    if(!e.auto||!cap)continue;
+    const want=e.sales>0?e.sales*1.15-e.stock+e.sales*0.3:(e.stock<cap?cap:0);
+    e.level=clamp(Math.round(want/cap*20)/20,0,1);
+  }
+}
+function resetMonth(co){
+  co.rep=emptyRep();
+  for(const pid in co.products){
+    const e=co.products[pid];
+    Object.assign(e,{sales:0,revenue:0,cogs:0,produced:0,city:{},lostStock:0,lostStore:0,fovh:0,rent:0,hold:0});
+  }
+}
+function production(co){
+  for(const f of co.factories){
+    const p=P(f.pid),e=getP(co,f.pid),w=C(f.city).wage;
+    const units=Math.round(p.cap*e.level);
+    const uc=unitCostAt(f.pid,f.city);
+    if(units>0){e.avgCost=(e.stock*e.avgCost+units*uc)/(e.stock+units);e.stock+=units;}
+    e.produced+=units;
+    const ovh=FACTORY_OVH*w*(0.4+0.6*e.level);
+    co.rep.prod+=units*uc;co.rep.fovh+=ovh;e.fovh+=ovh;
+  }
+}
+function runMarket(){
+  G.market={};G.mtotal={};
+  for(const p of PRODUCTS){
+    const st=alive().filter(co=>co.products[p.id]&&nStores(co,p.id)>0).map(co=>({
+      co,e:co.products[p.id],stock:co.products[p.id].stock,used:0,desired:0,a:{},cnt:{},alloc:{},sold:{},lostStock:0,lostStore:0}));
+    const cd={};
+    for(const c of CITIES){
+      let sA=0,wp=0,wq=0;
+      for(const s of st){
+        const n=nStores(s.co,p.id,c.id);s.cnt[c.id]=n;
+        if(!n){s.a[c.id]=0;continue;}
+        const e=s.e;
+        const a=Math.pow(n,0.7)*Math.pow(0.4+e.quality/50,1.2)*(0.5+e.brand/40)*Math.pow(p.ref/e.price,3);
+        s.a[c.id]=a;sA+=a;wp+=a*e.price;wq+=a*e.quality;
+      }
+      const avgP=sA?wp/sA:p.ref,avgQ=sA?wq/sA:30;
+      const D=baseDemand(c,p.id)*Math.pow(p.ref/avgP,p.el)*(0.75+0.25*avgQ/40);
+      cd[c.id]={demand:sA?D:0,potential:baseDemand(c,p.id),avgP,sA};
+      for(const s of st){const al=sA?D*s.a[c.id]/sA:0;s.alloc[c.id]=al;s.desired+=al;}
+    }
+    // 1차 배분: 재고 비율 + 매장 처리 한도
+    for(const s of st){
+      const ratio=s.desired>0?Math.min(1,s.stock/s.desired):0;
+      for(const c of CITIES){
+        const al=s.alloc[c.id];
+        if(!al){s.sold[c.id]=0;continue;}
+        let q=al*ratio;s.lostStock+=al-q;
+        const cap=s.cnt[c.id]*p.scap;
+        if(q>cap){s.lostStore+=q-cap;q=cap;}
+        q=Math.floor(q);s.sold[c.id]=q;s.used+=q;
+      }
+    }
+    // 2차 배분: 못 산 고객 절반이 다른 판매자로 이동
+    for(const c of CITIES){
+      const d=cd[c.id];if(!d.sA)continue;
+      const left=(d.demand-sum(st,s=>s.sold[c.id]))*0.5;if(left<1)continue;
+      const av=st.filter(s=>s.cnt[c.id]>0&&s.stock-s.used>0&&s.cnt[c.id]*p.scap-s.sold[c.id]>0);
+      const sa=sum(av,s=>s.a[c.id]);if(!sa)continue;
+      for(const s of av){
+        const q=Math.floor(Math.min(left*s.a[c.id]/sa,s.stock-s.used,s.cnt[c.id]*p.scap-s.sold[c.id]));
+        if(q>0){s.sold[c.id]+=q;s.used+=q;}
+      }
+    }
+    const tot={demand:0,potential:0,sold:0,rev:0,shares:[]};
+    for(const c of CITIES){
+      const d=cd[c.id];
+      const m={demand:d.demand,potential:d.potential,avgP:d.avgP,sold:0,sellers:[]};
+      for(const s of st)if(s.cnt[c.id]>0){m.sellers.push({id:s.co.id,units:s.sold[c.id],stores:s.cnt[c.id]});m.sold+=s.sold[c.id];}
+      m.sellers.sort((a,b)=>b.units-a.units);
+      G.market[p.id+'|'+c.id]=m;
+      tot.demand+=d.demand;tot.potential+=d.potential;tot.sold+=m.sold;
+    }
+    for(const s of st){
+      const e=s.e;
+      e.sales=s.used;e.revenue=s.used*e.price;e.cogs=s.used*e.avgCost;e.stock-=s.used;
+      e.city={...s.sold};e.lostStock=s.lostStock;e.lostStore=s.lostStore;
+      tot.rev+=e.revenue;tot.shares.push({id:s.co.id,units:s.used,rev:e.revenue});
+    }
+    tot.shares.sort((a,b)=>b.units-a.units);
+    tot.avgP=tot.sold?tot.rev/tot.sold:p.ref;
+    G.mtotal[p.id]=tot;
+  }
+}
+function finance(co){
+  const r=co.rep;
+  for(const s of co.stores){const v=STORE_RENT*C(s.city).land;r.rent+=v;getP(co,s.pid).rent+=v;}
+  r.hq=0.3e8+0.015e8*(co.factories.length+co.stores.length);
+  r.int=co.loan*0.006;
+  for(const pid in co.products){
+    const e=co.products[pid],p=P(pid);
+    e.hold=e.stock*e.avgCost*0.015;
+    r.rev+=e.revenue;r.cogs+=e.cogs;r.hold+=e.hold;r.rd+=e.rd;r.ad+=e.ad;
+    e.profit=e.revenue-e.cogs-e.fovh-e.rent-e.hold-e.rd-e.ad;
+    // R&D → 품질, 광고 → 브랜드
+    e.quality=clamp(e.quality+e.rd/p.rd/(1+e.quality/30)-0.12,1,100);
+    e.brand=clamp((e.brand+e.ad/1e8*2/(1+e.brand/25))*0.97,0,100);
+  }
+  const pre=r.rev-r.cogs-r.fovh-r.rent-r.hq-r.int-r.hold-r.rd-r.ad;
+  r.tax=pre>0?pre*0.22:0;
+  r.profit=pre-r.tax;
+  r.cash=r.rev-r.prod-r.fovh-r.rent-r.hq-r.int-r.hold-r.rd-r.ad-r.tax;
+  co.cash+=r.cash;
+  co.profits.push(r.profit);if(co.profits.length>12)co.profits.shift();
+  // 배당 (AI → 지분 보유한 플레이어)
+  if(!co.isPlayer&&r.profit>0&&co.cash>20e8){
+    const div=r.profit*0.2;co.cash-=div;
+    const h=G.holdings[co.id]||0;
+    if(h>0){const pl=player();pl.cash+=div*h;pl.rep.div+=div*h;}
+  }
+  // 자동 대출
+  if(co.cash<0){
+    const can=Math.max(0,creditLimit(co)-co.loan);
+    const b=Math.min(-co.cash+2e8,can);
+    if(b>0){co.loan+=b;co.cash+=b;if(co.isPlayer)addNews(`💳 현금 부족으로 ${fmtW(b)} 자동 대출.`,'bad');}
+  }
+  co.negMonths=co.cash<0?co.negMonths+1:0;
+  if(co.isPlayer&&co.negMonths>0)addNews(`⚠️ 자금 고갈 ${co.negMonths}개월째. 3개월 지속 시 파산.`,'bad');
+}
+function bookValue(co){
+  return sum(co.factories,f=>f.cost*0.6)+sum(co.stores,s=>s.cost*0.6)+sum(Object.values(co.products),e=>e.stock*e.avgCost*0.8);
+}
+function avgProfit(co){return co.profits.length?sum(co.profits,x=>x)/co.profits.length:0;}
+function creditLimit(co){return Math.max(20e8,bookValue(co)*0.7+Math.max(0,avgProfit(co))*24);}
+function holdingsValue(){return sum(Object.keys(G.holdings),id=>{const t=G.companies[id];return t.alive?G.holdings[id]*t.price*SHARES:0;});}
+function equity(co){return co.cash-co.loan+bookValue(co)+(co.isPlayer?holdingsValue():0);}
+function bankruptcyCheck(){
+  for(const co of alive()){
+    if(co.negMonths<3)continue;
+    if(co.isPlayer){G.over='bankrupt';addNews(`💀 ${co.name} 파산.`,'bad');continue;}
+    co.alive=false;co.status='파산';co.factories=[];co.stores=[];
+    if(G.holdings[co.id]){addNews(`보유하던 ${co.name} 지분 휴지조각.`,'bad');delete G.holdings[co.id];}
+    addNews(`💀 ${co.name} 파산. 모든 시설 청산.`,'bad');
+  }
+}
+function computeValuations(){
+  const order=alive().filter(c=>!c.isPlayer).concat(alive().filter(c=>c.isPlayer));
+  for(const co of order){
+    const eq=equity(co);
+    let v=Math.max(eq*0.4,eq+avgProfit(co)*72);
+    v=Math.max(v,1e8);
+    co.prevPrice=co.price||v/SHARES;
+    co.price=Math.max(100,Math.round(v/SHARES*(1+gauss()*0.02)));
+    co.value=co.price*SHARES;
+  }
+}
+function recordHistory(){
+  for(const co of G.companies){
+    co.hist.value.push(co.alive?co.value:null);
+    co.hist.rev.push(co.alive?co.rep.rev:null);
+    co.hist.profit.push(co.alive?co.rep.profit:null);
+    co.hist.cash.push(co.alive?co.cash:null);
+  }
+}
+
+// ════════════════════ AI ════════════════════
+function roundB(v){return Math.round(v/1e6)*1e6;}
+function aiTurn(co){
+  const S=STRATS[co.strat];
+  const low=co.cash<10e8||co.negMonths>0;
+  for(const pid in co.products){
+    const e=co.products[pid],p=P(pid),cap=capacity(co,pid);
+    const uc=prodUnitCost(co,pid)||e.avgCost||p.mat+p.labor;
+    const cover=e.sales>0?e.stock/e.sales:(e.stock>0?9:0);
+    let price=e.price*0.8+p.ref*S.markup*(0.9+0.1*e.quality/40)*0.2;
+    if(cover>2)price*=0.95;else if(cover<0.7&&e.sales>0)price*=1.04;
+    e.price=Math.round(clamp(price,uc*1.04,p.ref*1.8));
+    if(cap>0){
+      if(cover>2.5)e.level=Math.max(0.25,e.level-0.25);
+      else if(cover<1.3)e.level=Math.min(1,e.level+0.25);
+    }
+    const basis=Math.max(e.revenue,cap*p.ref*0.15);
+    e.rd=low?0:roundB(basis*S.rd);e.ad=low?0:roundB(basis*S.ad);
+  }
+  // 부진 매장 정리
+  for(const s of [...co.stores]){
+    const e=co.products[s.pid];const n=nStores(co,s.pid,s.city);
+    const per=(e.city[s.city]||0)/n;
+    s.low=per<P(s.pid).scap*0.12?(s.low||0)+1:0;
+    if(s.low>=8&&e.stock<P(s.pid).scap){co.stores=co.stores.filter(x=>x!==s);co.cash+=s.cost*0.5;}
+  }
+  if(co.loan>0&&co.cash>40e8){const r=Math.min(co.loan,co.cash-30e8);co.loan-=r;co.cash-=r;}
+  if(low)return;
+  const acts=co.strat==='expand'?2:1;
+  for(let k=0;k<acts;k++)if(Math.random()<S.aggr*(G.aiAggr||0.85))aiExpand(co);
+}
+function aiExpand(co){
+  const opts=[];
+  for(const pid in co.products){
+    const e=co.products[pid];
+    const nf=co.factories.filter(f=>f.pid===pid).length,ns=nStores(co,pid);
+    if(!nf){opts.push({t:'factory',pid,w:3});continue;}
+    if(!ns){opts.push({t:'store',pid,w:3});continue;}
+    const cover=e.sales>0?e.stock/e.sales:9;
+    if(e.lostStock>e.sales*0.25&&e.level>=1&&e.revenue>e.cogs)opts.push({t:'factory',pid,w:2});
+    if(e.lostStore>e.sales*0.1||cover>1.6)opts.push({t:'store',pid,w:1.5});
+  }
+  if(Object.keys(co.products).length<4&&co.cash>70e8)opts.push({t:'enter',w:0.4});
+  if(!opts.length)return;
+  let r=Math.random()*sum(opts,o=>o.w),o=opts[0];
+  for(const x of opts){r-=x.w;if(r<=0){o=x;break;}}
+  const buf=8e8;
+  if(o.t==='factory'){
+    const city=cheapCity();
+    if(co.cash>factoryCost(city)+buf+10e8&&buildFactory(co,o.pid,city))
+      addNews(`🏭 ${co.name}, ${C(city).name}에 ${P(o.pid).name} 공장 건설.`);
+  }else if(o.t==='store'){
+    const city=bestStoreCity(co,o.pid);
+    if(city&&co.cash>storeCost(city)+buf&&openStore(co,o.pid,city)&&Math.random()<0.5)
+      addNews(`🏬 ${co.name}, ${C(city).name}에 ${P(o.pid).name} 매장 개설.`);
+  }else{
+    const cand=PRODUCTS.filter(p=>!co.products[p.id]).map(p=>{
+      const supply=sum(alive(),c=>capacity(c,p.id));
+      const pot=(G.mtotal[p.id]?.potential)||p.cap*3;
+      return {pid:p.id,v:supply/pot*rnd(0.7,1.3)};
+    }).sort((a,b)=>a.v-b.v);
+    if(cand.length&&co.cash>FACTORY_COST*1.3+15e8&&aiSetupProduct(co,cand[0].pid,false))
+      addNews(`🚀 ${co.name}, ${P(cand[0].pid).icon} ${P(cand[0].pid).name} 시장 신규 진출.`);
+  }
+}
+
+// ════════════════════ 플레이어 액션 ════════════════════
+function act(fn,...a){if(!G||(G.over&&!G.endless))return;fn(...a);save();render();}
+function doFactory(pid,city){
+  const pl=player(),cost=factoryCost(city);
+  if(pl.cash<cost)return toast(`현금 부족 (필요 ${fmtW(cost)})`);
+  buildFactory(pl,pid,city);
+  addNews(`🏭 ${C(city).name}에 ${P(pid).name} 공장 건설 (${fmtW(cost)}).`,'me');toast('공장 건설 완료');
+}
+function doStore(pid,city){
+  const pl=player(),cost=storeCost(city);
+  if(pl.cash<cost)return toast(`현금 부족 (필요 ${fmtW(cost)})`);
+  openStore(pl,pid,city);
+  addNews(`🏬 ${C(city).name}에 ${P(pid).name} 매장 개설 (${fmtW(cost)}).`,'me');
+  toast(capacity(pl,pid)?'매장 개설 완료':'매장 개설. 공장이 없으면 팔 재고 없음');
+}
+function sellFactory(id){
+  const pl=player(),f=pl.factories.find(x=>x.id===id);if(!f)return;
+  if(!confirm(`${C(f.city).name} ${P(f.pid).name} 공장을 ${fmtW(f.cost*0.5)}에 매각?`))return;
+  pl.factories=pl.factories.filter(x=>x!==f);pl.cash+=f.cost*0.5;
+  addNews(`${C(f.city).name} ${P(f.pid).name} 공장 매각.`,'me');
+}
+function closeStore(pid,city){
+  const pl=player(),s=pl.stores.find(x=>x.pid===pid&&x.city===city);if(!s)return;
+  pl.stores=pl.stores.filter(x=>x!==s);pl.cash+=s.cost*0.5;
+  addNews(`${C(city).name} ${P(pid).name} 매장 1곳 폐점.`,'me');
+}
+function setPrice(pid,v){const e=getP(player(),pid),p=P(pid);v=Math.round(Number(v));if(!(v>0))return;e.price=clamp(v,Math.round(p.ref*0.2),p.ref*5);}
+function nudgePrice(pid,f){const e=getP(player(),pid);setPrice(pid,e.price*f);}
+function setField(pid,k,v){const e=getP(player(),pid);if(k==='level'){e.auto=v==='auto';if(e.auto)return;}e[k]=Number(v);}
+function borrow(amt){
+  const pl=player(),can=creditLimit(pl)-pl.loan;
+  if(can<amt)return toast(`대출 한도 초과 (여력 ${fmtW(Math.max(0,can))})`);
+  pl.loan+=amt;pl.cash+=amt;toast(`${fmtW(amt)} 차입`);
+}
+function repay(amt){
+  const pl=player();amt=Math.min(amt,pl.loan,pl.cash);
+  if(amt<=0)return toast('상환할 대출 또는 현금 없음');
+  pl.loan-=amt;pl.cash-=amt;toast(`${fmtW(amt)} 상환`);
+}
+function buyCost(t,add){const cur=G.holdings[t.id]||0;return add*SHARES*t.price*(1+0.4*cur+0.2*add);}
+function trade(id,d){
+  const t=G.companies[id],pl=player();if(!t.alive)return;
+  const cur=G.holdings[id]||0;
+  if(d>0){
+    const add=Math.min(d,1-cur);if(add<=0.0001)return;
+    const cost=buyCost(t,add);
+    if(pl.cash<cost)return toast(`현금 부족 (필요 ${fmtW(cost)})`);
+    pl.cash-=cost;G.holdings[id]=cur+add;t.price=Math.round(t.price*(1+add*0.5));
+    addNews(`📊 ${t.name} 지분 ${pct(add)} 매수 (${fmtW(cost)}). 보유 ${pct(cur+add)}.`,'me');
+  }else{
+    const sub=Math.min(-d,cur);if(sub<=0)return;
+    const got=sub*SHARES*t.price*0.98;pl.cash+=got;
+    G.holdings[id]=cur-sub;if(G.holdings[id]<0.0001)delete G.holdings[id];
+    t.price=Math.max(100,Math.round(t.price*(1-sub*0.3)));
+    addNews(`📊 ${t.name} 지분 ${pct(sub)} 매도 (${fmtW(got)}).`,'me');
+  }
+}
+function mergeCost(t){return (1-(G.holdings[t.id]||0))*SHARES*t.price;}
+function merge(id){
+  const t=G.companies[id],pl=player();
+  if((G.holdings[id]||0)<0.5)return;
+  const cost=mergeCost(t);
+  if(pl.cash+t.cash<cost)return toast(`잔여 지분 매입 자금 부족 (필요 ${fmtW(cost)})`);
+  if(!confirm(`잔여 지분을 ${fmtW(cost)}에 매입하고 ${t.name}을(를) 합병?`))return;
+  pl.cash+=t.cash-cost;pl.loan+=t.loan;
+  pl.factories.push(...t.factories);pl.stores.push(...t.stores);
+  for(const pid in t.products){
+    const te=t.products[pid];
+    if(pl.products[pid]){
+      const pe=pl.products[pid],tot=pe.stock+te.stock;
+      if(tot)pe.avgCost=(pe.stock*pe.avgCost+te.stock*te.avgCost)/tot;
+      pe.stock=tot;pe.quality=Math.max(pe.quality,te.quality);pe.brand=Math.max(pe.brand,te.brand);
+    }else pl.products[pid]={...te,rd:0,ad:0,city:{},auto:true};
+  }
+  t.alive=false;t.status='인수됨';t.factories=[];t.stores=[];delete G.holdings[id];
+  addNews(`🤝 ${t.name} 합병 완료. 시설 전부 인수.`,'me');toast(`${t.name} 합병 완료`);
+}
+
+// ════════════════════ 진행 제어 ════════════════════
+function nextMonth(){
+  if(!G)return;
+  if(G.over&&!G.endless){showEnd();return;}
+  step();save();render();
+  if(G.over&&!G.endless){stopAuto();showEnd();}
+}
+function toggleAuto(){
+  UI.speed=(UI.speed+1)%3;
+  clearInterval(UI.timer);UI.timer=null;
+  if(UI.speed)UI.timer=setInterval(nextMonth,UI.speed===1?1200:450);
+  document.getElementById('btnAuto').textContent=['자동 ⏵','자동 1x ⏸','자동 2x ⏸'][UI.speed];
+}
+function stopAuto(){UI.speed=2;toggleAuto();}
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(G));}catch(e){}}
+function load(){try{const s=localStorage.getItem(SAVE_KEY);if(s){G=JSON.parse(s);return !!(G&&G.companies);}}catch(e){}return false;}
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;
+  if(e.code==='Space'||e.key==='n'){e.preventDefault();if(document.getElementById('modal').classList.contains('hidden'))nextMonth();}
+});
+
+// ════════════════════ 렌더링 ════════════════════
+const TABS=[['overview','개요'],['map','도시·지도'],['biz','내 사업'],['market','시장'],['stock','주식·금융'],['rank','순위'],['news','뉴스']];
+function rankOf(co){return [...alive()].sort((a,b)=>b.value-a.value).indexOf(co)+1;}
+function render(){
+  if(!G)return;
+  const pl=player();
+  document.getElementById('coName').textContent=pl.name;
+  document.getElementById('hstats').innerHTML=`
+    <span>📅<b>${dateStr(G.month)}</b></span>
+    <span>현금<b class="${cls(pl.cash)}">${fmtW(pl.cash)}</b></span>
+    <span>부채<b>${fmtW(pl.loan)}</b></span>
+    <span>기업가치<b>${fmtW(pl.value)}</b></span>
+    <span>순위<b>${rankOf(pl)}/${alive().length}</b></span>
+    <span>경기<b class="${cls(G.econ-1)}">${(G.econ*100).toFixed(0)}</b></span>`;
+  document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>`<div class="tab ${UI.tab===k?'on':''}" onclick="UI.tab='${k}';render()">${l}</div>`).join('');
+  Object.values(UI.charts).forEach(c=>c&&c.destroy&&c.destroy());UI.charts={};
+  const m=document.getElementById('main');
+  m.innerHTML=({overview:vOverview,map:vMap,biz:vBiz,market:vMarket,stock:vStock,rank:vRank,news:vNews})[UI.tab]();
+  if(UI.tab==='overview')chartOverview();
+  if(UI.tab==='rank')chartRank();
+}
+function coName(id){const c=G.companies[id];return `<span class="dot" style="background:${c.color}"></span>${esc(c.name)}`;}
+function shareBar(list,key='units'){
+  const t=sum(list,x=>x[key]);if(!t)return `<div class="bar"></div>`;
+  return `<div class="bar">${list.map(x=>`<div style="width:${x[key]/t*100}%;background:${G.companies[x.id].color}" title="${esc(G.companies[x.id].name)} ${pct(x[key]/t,1)}"></div>`).join('')}</div>`;
+}
+function kpi(l,v,c=''){return `<div class="kpi"><div class="l">${l}</div><div class="v ${c}">${v}</div></div>`;}
+
+function vOverview(){
+  const pl=player(),r=pl.rep;
+  const nothing=!pl.factories.length&&!pl.stores.length;
+  const tip=nothing?`<div class="tip"><b>시작 방법</b><br>
+    ① <b>도시·지도</b> 탭에서 도시를 골라 제품 공장 건설 (인건비 싼 도시가 원가 유리)<br>
+    ② 수요 큰 도시에 같은 제품 매장 개설 (매장이 있어야 판매)<br>
+    ③ <b>내 사업</b> 탭에서 판매가·R&D·광고 조정 후 <b>다음 달 ▶</b> (스페이스바)</div>`:'';
+  const rows=[['매출',r.rev],['매출원가',-r.cogs],['공장 운영비',-r.fovh],['매장 임대료',-r.rent],['본사 관리비',-r.hq],['재고 보관비',-r.hold],['R&D',-r.rd],['광고',-r.ad],['이자',-r.int],['법인세',-r.tax]];
+  return `${tip}
+  <div class="kpis">
+    ${kpi('현금',fmtW(pl.cash),cls(pl.cash))}
+    ${kpi('월 매출',fmtW(r.rev))}
+    ${kpi('월 순이익',fmtW(r.profit),cls(r.profit))}
+    ${kpi('기업가치',fmtW(pl.value))}
+    ${kpi('주가',pl.price.toLocaleString()+'원',cls(pl.price-pl.prevPrice))}
+    ${kpi('순위',rankOf(pl)+' / '+alive().length)}
+    ${kpi('남은 기간',G.endless?'무제한':Math.max(0,END_MONTH-G.month)+'개월')}
+  </div>
+  <div class="grid g2">
+    <div class="card"><h3>기업가치·현금 추이</h3><div class="chartbox"><canvas id="cOv"></canvas></div></div>
+    <div class="card"><h3>지난달 손익</h3>
+      ${rows.map(([l,v])=>`<div class="row"><span>${l}</span><span class="${cls(v)}">${fmtW(v)}</span></div>`).join('')}
+      ${r.div?`<div class="row"><span>배당 수입</span><span class="pos">${fmtW(r.div)}</span></div>`:''}
+      <div class="row" style="border-top:1px solid var(--line);margin-top:4px;padding-top:8px"><span><b>순이익</b></span><b class="${cls(r.profit)}">${fmtW(r.profit)}</b></div>
+      <div class="row"><span>현금 증감</span><span class="${cls(r.cash)}">${fmtW(r.cash+r.div)}</span></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px"><h3>최근 뉴스 <span class="btn sm" onclick="UI.tab='news';render()">전체 보기</span></h3>${newsList(8)}</div>`;
+}
+function chartOverview(){
+  if(typeof Chart==='undefined')return;
+  const pl=player(),labels=pl.hist.value.map((_,i)=>shortDate(i));
+  UI.charts.ov=new Chart(document.getElementById('cOv'),{type:'line',data:{labels,datasets:[
+    {label:'기업가치',data:pl.hist.value.map(v=>v/1e8),borderColor:'#e0b04f',backgroundColor:'#e0b04f',tension:.25,pointRadius:0,borderWidth:2},
+    {label:'현금',data:pl.hist.cash.map(v=>v/1e8),borderColor:'#4c8dff',backgroundColor:'#4c8dff',tension:.25,pointRadius:0,borderWidth:1.5},
+  ]},options:chartOpts('억')});
+}
+function chartOpts(unit){
+  return {responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{labels:{color:'#c8cfdb',boxWidth:10,font:{size:11}}},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y==null?'-':c.parsed.y.toFixed(1)+unit}`}}},
+    scales:{x:{ticks:{color:'#8b94a7',maxTicksLimit:10},grid:{color:'#20283a'}},y:{ticks:{color:'#8b94a7',callback:v=>v+unit},grid:{color:'#20283a'}}}};
+}
+
+function vMap(){
+  const pl=player(),c=C(UI.city);
+  const maxPop=Math.max(...CITIES.map(x=>x.pop));
+  const svg=`<svg class="map" viewBox="0 0 310 400">
+    <path d="M58,62 L100,52 L140,40 L180,30 L215,26 L232,60 L246,100 L256,140 L264,190 L267,240 L256,272 L240,296 L222,306 L200,304 L180,312 L160,308 L140,316 L118,312 L96,322 L72,318 L58,300 L64,276 L52,256 L62,232 L56,206 L70,188 L60,164 L72,146 L56,128 L48,108 L58,88 Z" fill="#1b2230" stroke="#3a4560" stroke-width="1.5"/>
+    <ellipse cx="82" cy="372" rx="28" ry="11" fill="#1b2230" stroke="#3a4560" stroke-width="1.5"/>
+    ${CITIES.map(x=>{
+      const r=5+Math.sqrt(x.pop/maxPop)*12,mine=pl.stores.some(s=>s.city===x.id)||pl.factories.some(f=>f.city===x.id),sel=x.id===UI.city;
+      return `<g class="city" onclick="UI.city='${x.id}';render()">
+        <circle class="c" cx="${x.x}" cy="${x.y}" r="${r}" fill="${mine?'rgba(224,176,79,.55)':'rgba(76,141,255,.35)'}" stroke="${sel?'#fff':mine?'#e0b04f':'#4c8dff'}" stroke-width="${sel?2.5:1.2}"/>
+        <text x="${x.x}" y="${x.y-r-3}" text-anchor="middle" fill="${sel?'#fff':'#c8cfdb'}" font-size="10.5" font-weight="${sel?700:400}">${x.name}</text></g>`;
+    }).join('')}</svg>
+    <div class="small muted" style="margin-top:6px">● 금색 = 내 시설 있는 도시. 원 크기 = 인구.</div>`;
+  const rows=PRODUCTS.map(p=>{
+    const m=G.market[p.id+'|'+c.id]||{potential:baseDemand(c,p.id),avgP:p.ref,sellers:[],sold:0};
+    const mine=nStores(pl,p.id,c.id),myF=pl.factories.filter(f=>f.pid===p.id&&f.city===c.id).length;
+    const mySold=(pl.products[p.id]?.city||{})[c.id]||0;
+    return `<tr>
+      <td>${p.icon} ${p.name}</td>
+      <td class="r">${fmtN(m.potential)}</td>
+      <td class="r">${fmtW(m.avgP)}</td>
+      <td>${m.sellers.length?shareBar(m.sellers):'<span class="tag">공급자 없음</span>'}</td>
+      <td class="r">${mine}${mine?` <span class="muted small">(${fmtN(mySold)}개)</span>`:''}${myF?` · 🏭${myF}`:''}</td>
+      <td><button class="btn sm" onclick="act(doStore,'${p.id}','${c.id}')">+매장 ${fmtW(storeCost(c.id))}</button>
+          <button class="btn sm" onclick="act(doFactory,'${p.id}','${c.id}')">+공장 ${fmtW(factoryCost(c.id))}</button></td></tr>`;
+  }).join('');
+  return `<div class="mapwrap">
+    <div class="card">${svg}</div>
+    <div class="card"><h3>${c.name}</h3>
+      <div class="grid g3" style="margin-bottom:10px">
+        <div><div class="row"><span>인구</span><span>${c.pop}만명</span></div><div class="row"><span>소득 수준</span><span>${(c.income*100).toFixed(0)}</span></div></div>
+        <div><div class="row"><span>지가 (매장비)</span><span>${c.land.toFixed(1)}x</span></div><div class="row"><span>임금 (공장원가)</span><span>${c.wage.toFixed(2)}x</span></div></div>
+      </div>
+      <div class="tw"><table><thead><tr><th>제품</th><th class="r">월 잠재수요</th><th class="r">평균가</th><th>판매 점유</th><th class="r">내 매장</th><th>투자</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="small muted" style="margin-top:8px">매장 1곳 월 판매한도: ${PRODUCTS.map(p=>`${p.icon}${fmtN(p.scap)}`).join(' · ')}. 월 임대료 ${fmtW(STORE_RENT*c.land)}/곳.</div>
+    </div></div>`;
+}
+
+function vBiz(){
+  const pl=player(),pids=Object.keys(pl.products);
+  if(!pids.length)return `<div class="tip">아직 사업 없음. <b>도시·지도</b> 탭에서 공장과 매장을 먼저 세움.</div>`;
+  const opt=(v,sel)=>BUDGETS.map(b=>`<option value="${b}" ${b===sel?'selected':''}>${b?fmtW(b):'0'}</option>`).join('');
+  const best=(pid,k)=>Math.max(0,...alive().filter(c=>!c.isPlayer&&c.products[pid]).map(c=>c.products[pid][k]));
+  const cards=pids.map(pid=>{
+    const p=P(pid),e=pl.products[pid],cap=capacity(pl,pid),ns=nStores(pl,pid);
+    const uc=prodUnitCost(pl,pid);const margin=uc?(e.price-uc)/e.price:0;
+    const warn=!cap?'<span class="tag neg">공장 없음</span>':!ns?'<span class="tag neg">매장 없음</span>':e.lostStore>e.sales*0.1?'<span class="tag">매장 부족</span>':e.lostStock>e.sales*0.1?'<span class="tag">재고 부족</span>':'';
+    return `<div class="card"><h3><span>${p.icon} ${p.name}</span>${warn}</h3>
+      <div class="row"><span>품질 (경쟁사 최고 ${best(pid,'quality').toFixed(0)})</span><span>${e.quality.toFixed(0)}</span></div><div class="meter"><div style="width:${e.quality}%"></div></div>
+      <div class="row"><span>브랜드 (경쟁사 최고 ${best(pid,'brand').toFixed(0)})</span><span>${e.brand.toFixed(0)}</span></div><div class="meter"><div style="width:${e.brand}%;background:var(--blue)"></div></div>
+      <div class="row"><span>공장 / 매장</span><span>${cap/p.cap}곳 / ${ns}곳</span></div>
+      <div class="row"><span>생산능력 / 지난달 생산</span><span>${fmtN(cap)} / ${fmtN(e.produced)}</span></div>
+      <div class="row"><span>재고</span><span>${fmtN(e.stock)}</span></div>
+      <div class="row"><span>판매량 / 매출</span><span>${fmtN(e.sales)} / ${fmtW(e.revenue)}</span></div>
+      <div class="row"><span>제품 영업이익</span><span class="${cls(e.profit)}">${fmtW(e.profit)}</span></div>
+      <div class="row"><span>생산원가 / 기준가</span><span>${uc?fmtW(uc):'-'} / ${fmtW(p.ref)}</span></div>
+      <div class="row"><span>시장 평균가</span><span>${fmtW(G.mtotal[pid]?.avgP||p.ref)}</span></div>
+      <div class="ctrls">
+        <label style="grid-column:1/-1">판매가 (마진 ${uc?pct(margin):'-'})
+          <div class="pricebox"><button class="btn sm" onclick="act(nudgePrice,'${pid}',0.95)">-5%</button>
+          <input type="number" value="${e.price}" onchange="act(setPrice,'${pid}',this.value)">
+          <button class="btn sm" onclick="act(nudgePrice,'${pid}',1.05)">+5%</button></div></label>
+        <label>가동률<select onchange="act(setField,'${pid}','level',this.value)"><option value="auto" ${e.auto?'selected':''}>자동 (${Math.round(e.level*100)}%)</option>${[0,0.25,0.5,0.75,1].map(v=>`<option value="${v}" ${!e.auto&&v===e.level?'selected':''}>${v*100}%</option>`).join('')}</select></label>
+        <label>R&D /월<select onchange="act(setField,'${pid}','rd',this.value)">${opt(0,e.rd)}</select></label>
+        <label>광고 /월<select onchange="act(setField,'${pid}','ad',this.value)">${opt(0,e.ad)}</select></label>
+      </div></div>`;
+  }).join('');
+  const fac=pl.factories.map(f=>`<tr><td>${P(f.pid).icon} ${P(f.pid).name}</td><td>${C(f.city).name}</td><td class="r">${fmtN(P(f.pid).cap)}</td><td class="r">${fmtW(unitCostAt(f.pid,f.city))}</td><td><button class="btn sm red" onclick="act(sellFactory,${f.id})">매각 ${fmtW(f.cost*0.5)}</button></td></tr>`).join('');
+  const grp={};pl.stores.forEach(s=>{const k=s.pid+'|'+s.city;grp[k]=(grp[k]||0)+1;});
+  const sto=Object.entries(grp).map(([k,n])=>{const[pid,city]=k.split('|');const sold=(pl.products[pid].city||{})[city]||0;const u=sold/(n*P(pid).scap);
+    return `<tr><td>${P(pid).icon} ${P(pid).name}</td><td>${C(city).name}</td><td class="r">${n}</td><td class="r">${fmtN(sold)}</td><td class="r ${u<0.3?'neg':''}">${pct(u)}</td><td><button class="btn sm" onclick="act(doStore,'${pid}','${city}')">+1</button> <button class="btn sm red" onclick="act(closeStore,'${pid}','${city}')">폐점</button></td></tr>`;}).join('');
+  return `<div class="grid g3">${cards}</div>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="card"><h3>공장 ${pl.factories.length}곳</h3><div class="tw"><table><thead><tr><th>제품</th><th>도시</th><th class="r">능력/월</th><th class="r">단위원가</th><th></th></tr></thead><tbody>${fac||'<tr><td colspan=5 class="muted">없음</td></tr>'}</tbody></table></div></div>
+      <div class="card"><h3>매장 ${pl.stores.length}곳</h3><div class="tw"><table><thead><tr><th>제품</th><th>도시</th><th class="r">매장</th><th class="r">판매</th><th class="r">활용률</th><th></th></tr></thead><tbody>${sto||'<tr><td colspan=6 class="muted">없음</td></tr>'}</tbody></table></div></div>
+    </div>`;
+}
+
+function vMarket(){
+  return `<div class="grid g3">${PRODUCTS.map(p=>{
+    const t=G.mtotal[p.id]||{demand:0,potential:0,sold:0,avgP:p.ref,shares:[]};
+    const empty=CITIES.filter(c=>!(G.market[p.id+'|'+c.id]?.sellers.length)).length;
+    const supply=sum(alive(),c=>capacity(c,p.id));
+    return `<div class="card"><h3><span>${p.icon} ${p.name}</span><span class="tag">공백 도시 ${empty}</span></h3>
+      <div class="row"><span>잠재수요 / 판매량</span><span>${fmtN(t.potential)} / ${fmtN(t.sold)}</span></div>
+      <div class="row"><span>총 생산능력</span><span>${fmtN(supply)} (${t.potential?pct(supply/t.potential):'-'})</span></div>
+      <div class="row"><span>평균가 / 기준가</span><span>${fmtW(t.avgP)} / ${fmtW(p.ref)}</span></div>
+      <div class="row"><span>시장 규모</span><span>${fmtW(t.rev||0)}/월</span></div>
+      <div style="margin:8px 0">${shareBar(t.shares)}</div>
+      ${t.shares.slice(0,6).map(s=>`<div class="row small"><span style="color:var(--text)">${coName(s.id)}</span><span>${t.sold?pct(s.units/t.sold,1):'-'}</span></div>`).join('')||'<div class="muted small">판매자 없음</div>'}
+    </div>`;}).join('')}</div>`;
+}
+
+function vStock(){
+  const pl=player();
+  const rows=G.companies.filter(c=>!c.isPlayer).map(t=>{
+    const h=G.holdings[t.id]||0;
+    if(!t.alive)return `<tr><td>${coName(t.id)}</td><td colspan=8 class="muted">${t.status}</td></tr>`;
+    const ch=(t.price-t.prevPrice)/t.prevPrice;
+    return `<tr><td>${coName(t.id)}</td><td class="r">${t.price.toLocaleString()}원</td><td class="r ${cls(ch)}">${(ch*100).toFixed(1)}%</td><td class="r">${fmtW(t.value)}</td>
+      <td class="r">${h?pct(h,0):'-'}</td><td class="r muted">${fmtW(buyCost(t,0.05))}</td>
+      <td><button class="btn sm green" onclick="act(trade,${t.id},0.05)" title="${fmtW(buyCost(t,0.05))}">+5%</button> <button class="btn sm green" onclick="act(trade,${t.id},0.1)" title="${fmtW(buyCost(t,0.1))}">+10%</button></td>
+      <td><button class="btn sm red" onclick="act(trade,${t.id},-0.05)" ${h?'':'disabled'}>-5%</button> <button class="btn sm red" onclick="act(trade,${t.id},-1)" ${h?'':'disabled'}>전량</button></td>
+      <td>${h>=0.5?`<button class="btn sm gold" onclick="act(merge,${t.id})">합병 ${fmtW(mergeCost(t))}</button>`:`<span class="muted small">${pct(0.5)} 필요</span>`}</td></tr>`;
+  }).join('');
+  const lim=creditLimit(pl);
+  return `<div class="grid g2">
+    <div class="card" style="grid-column:1/-1"><h3>주식 시장 <span class="muted small">보유 지분이 클수록 매수 프리미엄 상승</span></h3>
+      <div class="tw"><table><thead><tr><th>기업</th><th class="r">주가</th><th class="r">등락</th><th class="r">시가총액</th><th class="r">내 지분</th><th class="r">5% 비용</th><th>매수</th><th>매도</th><th>인수</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="small muted" style="margin-top:8px">지분 50% 이상이면 잔여 지분을 시가에 사들여 합병 가능 (대상 회사 현금 포함). 흑자 기업은 순이익 20%를 배당.</div></div>
+    <div class="card"><h3>대출</h3>
+      <div class="row"><span>현재 대출</span><span>${fmtW(pl.loan)}</span></div>
+      <div class="row"><span>대출 한도</span><span>${fmtW(lim)}</span></div>
+      <div class="row"><span>월 이자 (0.6%)</span><span>${fmtW(pl.loan*0.006)}</span></div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn" onclick="act(borrow,10e8)">10억 차입</button><button class="btn" onclick="act(borrow,50e8)">50억 차입</button>
+        <button class="btn" onclick="act(repay,10e8)">10억 상환</button><button class="btn" onclick="act(repay,1e15)">전액 상환</button></div></div>
+    <div class="card"><h3>내 포트폴리오</h3>
+      <div class="row"><span>보유 주식 평가액</span><span>${fmtW(holdingsValue())}</span></div>
+      <div class="row"><span>내 주가</span><span>${pl.price.toLocaleString()}원</span></div>
+      <div class="row"><span>자기자본</span><span>${fmtW(equity(pl))}</span></div>
+      <div class="row"><span>최근 12개월 평균 순이익</span><span class="${cls(avgProfit(pl))}">${fmtW(avgProfit(pl))}</span></div></div>
+  </div>`;
+}
+
+function vRank(){
+  const list=[...G.companies].sort((a,b)=>(b.alive-a.alive)||(b.value-a.value));
+  const rows=list.map((c,i)=>`<tr class="${c.isPlayer?'me':''}"><td>${c.alive?i+1:'-'}</td><td>${coName(c.id)}</td><td class="muted">${c.isPlayer?'플레이어':STRATS[c.strat].label}</td>
+    <td class="r">${c.alive?fmtW(c.value):'-'}</td><td class="r">${c.alive?fmtW(c.cash):'-'}</td><td class="r">${c.alive?fmtW(c.loan):'-'}</td>
+    <td class="r">${c.alive?fmtW(c.rep.rev):'-'}</td><td class="r ${cls(c.rep.profit)}">${c.alive?fmtW(c.rep.profit):'-'}</td>
+    <td>${c.alive?Object.keys(c.products).map(p=>P(p).icon).join(''):''}</td><td class="r">${c.factories.length}</td><td class="r">${c.stores.length}</td><td>${c.alive?'':`<span class="tag">${c.status}</span>`}</td></tr>`).join('');
+  return `<div class="card"><h3>기업 순위 (기업가치 기준)</h3><div class="tw"><table><thead><tr><th>#</th><th>기업</th><th>전략</th><th class="r">기업가치</th><th class="r">현금</th><th class="r">부채</th><th class="r">월매출</th><th class="r">월순이익</th><th>제품</th><th class="r">공장</th><th class="r">매장</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>
+  <div class="card" style="margin-top:12px"><h3>기업가치 추이</h3><div class="chartbox" style="height:300px"><canvas id="cRank"></canvas></div></div>`;
+}
+function chartRank(){
+  if(typeof Chart==='undefined')return;
+  const labels=player().hist.value.map((_,i)=>shortDate(i));
+  UI.charts.rank=new Chart(document.getElementById('cRank'),{type:'line',data:{labels,datasets:G.companies.map(c=>({
+    label:c.name,data:c.hist.value.map(v=>v==null?null:v/1e8),borderColor:c.color,backgroundColor:c.color,pointRadius:0,tension:.25,borderWidth:c.isPlayer?3:1.2}))},options:chartOpts('억')});
+}
+function newsList(n){
+  const items=G.news.slice(0,n);
+  if(!items.length)return '<div class="muted">소식 없음</div>';
+  return `<ul class="news">${items.map(x=>`<li><span class="d">${dateStr(x.m)}</span><span class="${x.type?'n-'+x.type:''}">${esc(x.text)}</span></li>`).join('')}</ul>`;
+}
+function vNews(){return `<div class="card"><h3>뉴스</h3>${newsList(250)}</div>`;}
+
+// ════════════════════ 모달 ════════════════════
+function modal(html){document.getElementById('mbox').innerHTML=html;document.getElementById('modal').classList.remove('hidden');}
+function closeModal(){document.getElementById('modal').classList.add('hidden');}
+function showNewGame(canCancel){
+  modal(`<h2>새 게임</h2>
+    <p class="muted" style="margin-bottom:12px">도시 10곳, 기업 10곳(나 + AI 9). 10년 안에 기업가치 1위가 목표.</p>
+    <div class="fld">회사 이름<input type="text" id="ngName" value="내 회사" maxlength="16"></div>
+    <div class="fld">난이도<select id="ngDiff"><option value="easy">쉬움 (자본금 150억)</option><option value="normal" selected>보통 (자본금 100억)</option><option value="hard">어려움 (자본금 60억)</option></select></div>
+    <div class="fld">시작 사업<select id="ngStart"><option value="">없음 (직접 시작)</option>${PRODUCTS.map(p=>`<option value="${p.id}" ${p.id==='cosme'?'selected':''}>${p.icon} ${p.name} (대전 공장 + 매장 4곳)</option>`).join('')}</select></div>
+    <div class="acts">${canCancel?'<button class="btn" onclick="closeModal()">취소</button>':''}<button class="btn" onclick="showHelp(true)">규칙</button><button class="btn gold" onclick="startGame()">시작</button></div>`);
+}
+function startGame(){
+  stopAuto();
+  newGame(document.getElementById('ngName').value.trim(),document.getElementById('ngDiff').value,document.getElementById('ngStart').value);
+  UI.tab='overview';closeModal();save();render();
+}
+function showHelp(back){
+  modal(`<h2>규칙</h2><ul>
+    <li><b>공장</b>: 제품을 매달 생산. 원가 = 재료비(원자재 지수) + 인건비(도시 임금).</li>
+    <li><b>매장</b>: 도시에서 제품 판매. 매장 1곳당 월 판매한도 있음.</li>
+    <li><b>점유율</b>: 매장 수, 품질, 브랜드, 가격으로 결정. 가격이 낮으면 시장 전체 수요도 늘어남.</li>
+    <li><b>R&D</b>는 품질, <b>광고</b>는 브랜드를 올림. 둘 다 시간이 지나면 하락.</li>
+    <li>재고는 보관비(월 1.5%) 발생. 가동률 '자동'이면 판매량에 맞춰 생산.</li>
+    <li>현금이 바닥나면 자동 대출. 한도까지 다 쓰고 <b>3개월 연속</b> 마이너스면 파산.</li>
+    <li><b>주식</b>: 경쟁사 지분 매수로 배당 수령. 50% 이상이면 합병 가능.</li>
+    <li>2036년 12월 종료 시 기업가치 순위로 평가. 스페이스바 = 다음 달.</li></ul>
+    <div class="acts"><button class="btn gold" onclick="${back?'showNewGame(!!G)':'closeModal()'}">확인</button></div>`);
+}
+function openMenu(){
+  modal(`<h2>메뉴</h2><div class="acts" style="justify-content:flex-start">
+    <button class="btn" onclick="showHelp(false)">규칙</button>
+    <button class="btn" onclick="save();toast('저장 완료');closeModal()">저장</button>
+    <button class="btn red" onclick="showNewGame(true)">새 게임</button>
+    <button class="btn" onclick="closeModal()">닫기</button></div>`);
+}
+function showEnd(){
+  const pl=player();
+  const list=[...alive()].sort((a,b)=>b.value-a.value);
+  const rk=list.indexOf(pl)+1;
+  const title=G.over==='bankrupt'?'💀 파산':rk===1?'🏆 업계 1위 달성':`게임 종료: ${rk}위`;
+  modal(`<h2>${title}</h2>
+    <p>${G.over==='bankrupt'?'자금난을 버티지 못하고 파산함.':`${dateStr(G.month-1)} 기준 최종 기업가치 ${fmtW(pl.value)}.`}</p>
+    <div class="tw" style="margin-top:10px"><table><tbody>${list.map((c,i)=>`<tr class="${c.isPlayer?'me':''}"><td>${i+1}</td><td>${coName(c.id)}</td><td class="r">${fmtW(c.value)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="acts">${G.over==='end'?'<button class="btn" onclick="G.endless=true;save();closeModal();render()">계속 플레이</button>':''}<button class="btn" onclick="closeModal()">닫기</button><button class="btn gold" onclick="showNewGame(false)">새 게임</button></div>`);
+}
+
+// ════════════════════ 시작 ════════════════════
+if(load()){render();if(G.over&&!G.endless)showEnd();}
+else showNewGame(false);
+</script>
+</body>
+</html>
